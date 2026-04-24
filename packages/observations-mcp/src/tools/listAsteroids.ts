@@ -8,8 +8,8 @@ const registerListAsteroidsTool = (server: McpServer) => {
     {
       description: "List asteroids making close approaches to Earth between two dates.",
       inputSchema: {
-        start_date: z.string().date().describe("Start of date range (YYYY-MM-DD)"),
-        end_date: z.string().date().describe("End of date range (YYYY-MM-DD)"),
+        start_date: z.iso.date().describe("Start of date range (YYYY-MM-DD)"),
+        end_date: z.iso.date().describe("End of date range (YYYY-MM-DD)"),
       },
     },
     async ({start_date, end_date}) => {

@@ -8,6 +8,7 @@ import cors from 'cors'
 import express from 'express'
 import registerListAsteroidsTool from "./tools/listAsteroids.js";
 import registerGetAsteroidTool from "./tools/getAsteroid.js";
+import registerListObservableBodesTool from "./tools/listObservableBodies.js";
 
 const app = express()
 
@@ -30,6 +31,7 @@ function createMcpServer(): McpServer {
 
   registerListAsteroidsTool(server)
   registerGetAsteroidTool(server)
+  registerListObservableBodesTool(server)
 
   return server
 }
