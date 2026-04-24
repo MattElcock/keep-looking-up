@@ -7,6 +7,7 @@ import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/st
 import cors from 'cors'
 import express from 'express'
 import registerListAsteroidsTool from "./tools/listAsteroids.js";
+import registerGetAsteroidTool from "./tools/getAsteroid.js";
 
 const app = express()
 
@@ -28,6 +29,7 @@ function createMcpServer(): McpServer {
   })
 
   registerListAsteroidsTool(server)
+  registerGetAsteroidTool(server)
 
   return server
 }

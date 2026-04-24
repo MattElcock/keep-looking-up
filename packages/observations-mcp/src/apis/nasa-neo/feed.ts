@@ -1,26 +1,19 @@
+import { BaseAsteroid, OrbitalBodyApproach } from "./types.js";
+
 const NEO_FEED_API_URL = "https://api.nasa.gov/neo/rest/v1/feed";
 
-interface Asteroid {
-  name: string;
-  absoluteMagnitudeH: number;
-  estimatedDiameterKm: number;
-  isPotentiallyHazardous: boolean;
-  closeApproach: {
-    date: string;
-    time: string;
-    missDistanceKm: number;
-    missDistanceLunar: number
-    relativeVelocityKmPerSec: number;
-  }
+interface FeedAsteroid extends BaseAsteroid {
+  orbitalBodyApproach: OrbitalBodyApproach;
 }
 
 interface AsteroidsOnDate {
   date: string;
-  objects: Asteroid[];
+  objects: FeedAsteroid[];
 }
 
 interface ApiResponse {
   "near_earth_objects": Record<string, Array<{
+    id: string;
     name: string;
     "absolute_magnitude_h": number;
     "estimated_diameter": {
@@ -40,6 +33,7 @@ interface ApiResponse {
       "relative_velocity": {
         "kilometers_per_second": string;
       };
+      "orbiting_body": string;
     }>;
   }>>;
 }
@@ -61,21 +55,23 @@ const processFetchedData = (data: ApiResponse): AsteroidsOnDate[] => {
   return dates.map(date => {
     const objects = data.near_earth_objects[date];
 
-    const parsedObjects: Asteroid[] = objects.map(obj => {
+    const parsedObjects: FeedAsteroid[] = objects.map(obj => {
       const closeApproachDateFull = obj["close_approach_data"][0]["close_approach_date_full"];
       const [closeApproachDate, closeApproachTime] = closeApproachDateFull.split(" ");
 
       return {
+        id: obj.id,
         name: obj.name,
         absoluteMagnitudeH: obj["absolute_magnitude_h"],
         estimatedDiameterKm: obj["estimated_diameter"]["kilometers"]["estimated_diameter_min"],
         isPotentiallyHazardous: obj["is_potentially_hazardous_asteroid"],
-        closeApproach: {
-          date: closeApproachDate,
-          time: closeApproachTime,
-          missDistanceKm: parseFloat(obj["close_approach_data"][0]["miss_distance"]["kilometers"]),
-          missDistanceLunar: parseFloat(obj["close_approach_data"][0]["miss_distance"]["lunar"]),
-          relativeVelocityKmPerSec: parseFloat(obj["close_approach_data"][0]["relative_velocity"]["kilometers_per_second"]),
+        orbitalBodyApproach: {
+          approachDate: closeApproachDate,
+          approachTime: closeApproachTime,
+          distanceKm: parseFloat(obj["close_approach_data"][0]["miss_distance"]["kilometers"]),
+          distanceLunar: parseFloat(obj["close_approach_data"][0]["miss_distance"]["lunar"]),
+          velocityKmPerSec: parseFloat(obj["close_approach_data"][0]["relative_velocity"]["kilometers_per_second"]),
+          orbitalBody: obj["close_approach_data"][0]["orbiting_body"],
         }
       }
     })
