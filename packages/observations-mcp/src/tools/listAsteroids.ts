@@ -1,0 +1,25 @@
+import listAsteroids from "../apis/nasa-neo/feed.js";
+import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js'
+import {z} from 'zod'
+
+const registerListAsteroidsTool = (server: McpServer) => {
+  server.registerTool(
+    "listAsteroids",
+    {
+      description: "List asteroids making close approaches to Earth between two dates.",
+      inputSchema: {
+        start_date: z.string().date().describe("Start of date range (YYYY-MM-DD)"),
+        end_date: z.string().date().describe("End of date range (YYYY-MM-DD)"),
+      },
+    },
+    async ({start_date, end_date}) => {
+      const response = await listAsteroids(start_date, end_date);
+
+      return {
+        content: [{type: "text", text: JSON.stringify(response)}]
+      }
+    },
+  )
+}
+
+export default registerListAsteroidsTool;
