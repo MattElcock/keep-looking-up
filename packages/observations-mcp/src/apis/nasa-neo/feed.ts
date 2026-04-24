@@ -90,7 +90,7 @@ const processFetchedData = (data: ApiResponse): AsteroidsOnDate[] => {
 
 }
 
-const listNearEarthObjects = async (start_date: string, end_date: string): Promise<AsteroidsOnDate[]> => {
+const listAsteroids = async (start_date: string, end_date: string): Promise<AsteroidsOnDate[]> => {
   const api_key = process.env.NASA_API_KEY;
   const url = new URL(NEO_FEED_API_URL);
 
