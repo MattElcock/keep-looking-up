@@ -40,7 +40,6 @@ interface ApiResponse {
       kilometers_per_second: string;
     };
     orbiting_body: string;
-
   }>;
   orbital_data: {
     first_observation_date: string;
@@ -65,33 +64,40 @@ const fetchData = async (url: URL): Promise<ApiResponse> => {
     throw new Error("Failed to fetch data");
   }
   return response.json();
-}
+};
 
 const processFetchedData = (data: ApiResponse): DetailedAsteroid => {
-  const orbitalBodyApproaches: OrbitalBodyApproach[] = data.close_approach_data.map(approach => {
-    const [approachDate, approachTime] = approach.close_approach_date_full.split(" ");
-    return {
-      approachDate,
-      approachTime,
-      distanceKm: parseFloat(approach.miss_distance.kilometers),
-      distanceLunar: parseFloat(approach.miss_distance.lunar),
-      velocityKmPerSec: parseFloat(approach.relative_velocity.kilometers_per_second),
-      orbitalBody: approach.orbiting_body,
-    };
-  });
+  const orbitalBodyApproaches: OrbitalBodyApproach[] =
+    data.close_approach_data.map((approach) => {
+      const [approachDate, approachTime] =
+        approach.close_approach_date_full.split(" ");
+      return {
+        approachDate,
+        approachTime,
+        distanceKm: parseFloat(approach.miss_distance.kilometers),
+        distanceLunar: parseFloat(approach.miss_distance.lunar),
+        velocityKmPerSec: parseFloat(
+          approach.relative_velocity.kilometers_per_second,
+        ),
+        orbitalBody: approach.orbiting_body,
+      };
+    });
 
   return {
     id: data.id,
     name: data.name,
     designation: data.designation,
     absoluteMagnitudeH: data.absolute_magnitude_h,
-    estimatedDiameterKm: data.estimated_diameter.kilometers.estimated_diameter_min,
+    estimatedDiameterKm:
+      data.estimated_diameter.kilometers.estimated_diameter_min,
     isPotentiallyHazardous: data.is_potentially_hazardous_asteroid,
     orbitalBodyApproaches,
     orbitFirstObserved: data.orbital_data.first_observation_date,
     orbitLastObserved: data.orbital_data.last_observation_date,
     orbitUncertainty: parseInt(data.orbital_data.orbit_uncertainty),
-    minimumOrbitIntersectionAU: parseFloat(data.orbital_data.minimum_orbit_intersection),
+    minimumOrbitIntersectionAU: parseFloat(
+      data.orbital_data.minimum_orbit_intersection,
+    ),
     eccentricity: parseFloat(data.orbital_data.eccentricity),
     inclination: parseFloat(data.orbital_data.inclination),
     timeToOrbitSunDays: parseFloat(data.orbital_data.orbital_period),
@@ -100,15 +106,15 @@ const processFetchedData = (data: ApiResponse): DetailedAsteroid => {
     farthestPointFromSunAU: parseFloat(data.orbital_data.aphelion_distance),
     orbitClass: data.orbital_data.orbit_class.orbit_class_description,
   };
-}
+};
 
-const getDetailedAsteroid = async (asteroidId: string): Promise<DetailedAsteroid> => {
+const getDetailedAsteroid = async (
+  asteroidId: string,
+): Promise<DetailedAsteroid> => {
   const api_key = process.env.NASA_API_KEY;
   const url = new URL(asteroidId, NEO_LOOKUP_API_URL);
 
-  if (!api_key) throw new Error(
-    "env var NASA_API_KEY is not set"
-  )
+  if (!api_key) throw new Error("env var NASA_API_KEY is not set");
 
   url.searchParams.append("api_key", api_key);
 
@@ -120,6 +126,6 @@ const getDetailedAsteroid = async (asteroidId: string): Promise<DetailedAsteroid
     console.error("Error fetching data:", error);
     throw error;
   }
-}
+};
 
 export default getDetailedAsteroid;

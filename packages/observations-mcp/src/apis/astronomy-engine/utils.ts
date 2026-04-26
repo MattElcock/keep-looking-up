@@ -1,8 +1,20 @@
-import {Body, Equator, Horizon, Illumination, Observer, SearchRiseSet} from "astronomy-engine";
+import {
+  Body,
+  Equator,
+  Horizon,
+  Illumination,
+  Observer,
+  SearchRiseSet,
+} from "astronomy-engine";
 
-export const getBodyPosition = (body: Body, name: string, date: Date, observer: Observer) => {
+export const getBodyPosition = (
+  body: Body,
+  name: string,
+  date: Date,
+  observer: Observer,
+) => {
   const equator = Equator(body, date, observer, true, true);
-  const horizontal = Horizon(date, observer, equator.ra, equator.dec, 'normal');
+  const horizontal = Horizon(date, observer, equator.ra, equator.dec, "normal");
   const illum = Illumination(body, date);
   const setEvent = SearchRiseSet(body, observer, -1, date, 1);
 

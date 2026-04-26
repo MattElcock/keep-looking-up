@@ -1,21 +1,24 @@
-import 'dotenv/config'
-import {clerkMiddleware} from '@clerk/express'
-import {mcpAuthClerk, protectedResourceHandlerClerk,} from '@clerk/mcp-tools/express'
-import {fetchClerkAuthorizationServerMetadata} from '@clerk/mcp-tools/server'
-import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js'
-import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import cors from 'cors'
-import express from 'express'
+import "dotenv/config";
+import { clerkMiddleware } from "@clerk/express";
+import {
+  mcpAuthClerk,
+  protectedResourceHandlerClerk,
+} from "@clerk/mcp-tools/express";
+import { fetchClerkAuthorizationServerMetadata } from "@clerk/mcp-tools/server";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import cors from "cors";
+import express from "express";
 import registerToolListAsteroidsCloseToEarth from "./tools/listAsteroidsCloseToEarth.js";
 import registerToolGetAsteroid from "./tools/getAsteroid.js";
 import registerToolListBodiesAboveHorizon from "./tools/listBodiesAboveHorizon.js";
 
-const app = express()
+const app = express();
 
 // Required for public MCP clients to read the WWW-Authenticate header
-app.use(cors({exposedHeaders: ['WWW-Authenticate']}))
-app.use(clerkMiddleware())
-app.use(express.json())
+app.use(cors({ exposedHeaders: ["WWW-Authenticate"] }));
+app.use(clerkMiddleware());
+app.use(express.json());
 
 // ------------------------------------------------------------------
 // MCP server
@@ -25,15 +28,15 @@ app.use(express.json())
 // reconnecting a single instance to multiple transports.
 function createMcpServer(): McpServer {
   const server = new McpServer({
-    name: 'observations-mcp',
-    version: '0.1.0',
-  })
+    name: "observations-mcp",
+    version: "0.1.0",
+  });
 
-  registerToolListAsteroidsCloseToEarth(server)
-  registerToolGetAsteroid(server)
-  registerToolListBodiesAboveHorizon(server)
+  registerToolListAsteroidsCloseToEarth(server);
+  registerToolGetAsteroid(server);
+  registerToolListBodiesAboveHorizon(server);
 
-  return server
+  return server;
 }
 
 // ------------------------------------------------------------------
@@ -42,39 +45,48 @@ function createMcpServer(): McpServer {
 
 // MCP endpoint — protected by Clerk OAuth token verification
 // A fresh server + transport is created per request (SDK does not support reuse)
-app.post('/mcp', mcpAuthClerk, async (req, res) => {
-  const server = createMcpServer()
-  const transport = new StreamableHTTPServerTransport({sessionIdGenerator: undefined})
-  await server.connect(transport)
-  await transport.handleRequest(req, res, req.body)
-})
+app.post("/mcp", mcpAuthClerk, async (req, res) => {
+  const server = createMcpServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+});
 
 // OAuth protected resource metadata (required by current MCP spec)
-app.get('/.well-known/oauth-protected-resource/mcp', protectedResourceHandlerClerk)
+app.get(
+  "/.well-known/oauth-protected-resource/mcp",
+  protectedResourceHandlerClerk,
+);
 
 // OAuth authorization server metadata (required by older MCP spec clients)
-app.get('/.well-known/oauth-authorization-server', async (req, res) => {
-  const publishableKey = process.env.CLERK_PUBLISHABLE_KEY
+app.get("/.well-known/oauth-authorization-server", async (req, res) => {
+  const publishableKey = process.env.CLERK_PUBLISHABLE_KEY;
   if (!publishableKey) {
-    res.status(500).json({error: 'CLERK_PUBLISHABLE_KEY is not configured'})
-    return
+    res.status(500).json({ error: "CLERK_PUBLISHABLE_KEY is not configured" });
+    return;
   }
   try {
-    const metadata = await fetchClerkAuthorizationServerMetadata({publishableKey})
-    res.json(metadata)
+    const metadata = await fetchClerkAuthorizationServerMetadata({
+      publishableKey,
+    });
+    res.json(metadata);
   } catch (err) {
-    console.error('Failed to fetch authorization server metadata:', err)
-    res.status(500).json({error: 'Failed to fetch authorization server metadata'})
+    console.error("Failed to fetch authorization server metadata:", err);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch authorization server metadata" });
   }
-})
+});
 
 // ------------------------------------------------------------------
 // Start
 // ------------------------------------------------------------------
 
-const PORT = process.env.PORT ?? 3000
+const PORT = process.env.PORT ?? 3000;
 
 app.listen(PORT, () => {
-  console.log(`Observations MCP running on http://localhost:${PORT}`)
-  console.log(`MCP endpoint:  POST http://localhost:${PORT}/mcp`)
-})
+  console.log(`Observations MCP running on http://localhost:${PORT}`);
+  console.log(`MCP endpoint:  POST http://localhost:${PORT}/mcp`);
+});
