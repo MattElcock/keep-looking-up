@@ -6,9 +6,9 @@ import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js'
 import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import cors from 'cors'
 import express from 'express'
-import registerListAsteroidsTool from "./tools/listAsteroids.js";
-import registerGetAsteroidTool from "./tools/getAsteroid.js";
-import registerListObservableBodesTool from "./tools/listObservableBodies.js";
+import registerToolListAsteroidsCloseToEarth from "./tools/listAsteroidsCloseToEarth.js";
+import registerToolGetAsteroid from "./tools/getAsteroid.js";
+import registerToolListBodiesAboveHorizon from "./tools/listBodiesAboveHorizon.js";
 
 const app = express()
 
@@ -29,9 +29,9 @@ function createMcpServer(): McpServer {
     version: '0.1.0',
   })
 
-  registerListAsteroidsTool(server)
-  registerGetAsteroidTool(server)
-  registerListObservableBodesTool(server)
+  registerToolListAsteroidsCloseToEarth(server)
+  registerToolGetAsteroid(server)
+  registerToolListBodiesAboveHorizon(server)
 
   return server
 }

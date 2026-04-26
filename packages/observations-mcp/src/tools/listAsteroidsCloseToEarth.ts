@@ -2,9 +2,9 @@ import listAsteroids from "../apis/nasa-neo/feed.js";
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js'
 import {z} from 'zod'
 
-const registerListAsteroidsTool = (server: McpServer) => {
+const registerToolListAsteroidsCloseToEarth = (server: McpServer) => {
   server.registerTool(
-    "listAsteroids",
+    "listAsteroidsCloseToEarth",
     {
       description: "List asteroids making close approaches to Earth between two dates.",
       inputSchema: {
@@ -22,4 +22,4 @@ const registerListAsteroidsTool = (server: McpServer) => {
   )
 }
 
-export default registerListAsteroidsTool;
+export default registerToolListAsteroidsCloseToEarth;
