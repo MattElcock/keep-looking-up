@@ -2,17 +2,18 @@
 
 import styles from "./styles.module.css";
 import { ArrowRight } from "lucide-react";
-import { InputEvent, useRef } from "react";
-
-interface ChatInputProps {
-  id: string;
-  label: string;
-  className?: string;
-}
+import { InputEvent, SubmitEvent, useRef, useState } from "react";
 
 const MAX_ROWS = 6;
+const LINE_HEIGHT = 24;
+const MAX_HEIGHT = LINE_HEIGHT * MAX_ROWS;
 
-const PromptInput = ({ id, label, className }: ChatInputProps) => {
+interface PromptInputProps {
+  onSendMessage: (message: string) => Promise<void>;
+}
+
+const PromptInput = ({ onSendMessage }: PromptInputProps) => {
+  const [prompt, setPrompt] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleContainerClick = () => {
@@ -20,30 +21,39 @@ const PromptInput = ({ id, label, className }: ChatInputProps) => {
   };
 
   const handleInput = (e: InputEvent<HTMLTextAreaElement>) => {
-    const el = e.currentTarget;
-    el.style.height = "auto";
+    setPrompt(e.currentTarget.value);
 
-    const lineHeight = 24;
-    const maxHeight = lineHeight * MAX_ROWS;
+    e.currentTarget.style.height = "auto";
+    e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, MAX_HEIGHT)}px`;
+  };
 
-    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSendMessage(prompt);
+    setPrompt("");
   };
 
   return (
-    <div className={`${styles["prompt-input"]} ${className}`} onClick={handleContainerClick}>
-      <textarea
-        id={id}
-        aria-label={label}
-        ref={textareaRef}
-        rows={1}
-        aria-multiline
-        onInput={handleInput}
-        placeholder="Example: What could I see tonight?"
-      />
-      <button aria-label="Send">
-        <ArrowRight size={20} />
-      </button>
-    </div>
+    <form onSubmit={handleSubmit}>
+      <div className={styles["prompt-input"]} onClick={handleContainerClick}>
+        <textarea
+          id="prompt-input"
+          name="promptInput"
+          value={prompt}
+          aria-required
+          required
+          aria-label="Chat with the AI"
+          placeholder="Example: What could I see tonight?"
+          ref={textareaRef}
+          rows={1}
+          aria-multiline
+          onInput={handleInput}
+        />
+        <button type="submit" aria-label="Send" disabled={!prompt.trim()}>
+          <ArrowRight size={20} />
+        </button>
+      </div>
+    </form>
   );
 };
 

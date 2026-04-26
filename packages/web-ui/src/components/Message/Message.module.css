@@ -1,0 +1,14 @@
+.message {
+  width: fit-content;
+  padding: 0.5rem 1rem;
+
+  &.user-message {
+    align-self: flex-end;
+    background-color: var(--color-primary);
+    border-radius: 1rem;
+  }
+
+  &.assistant-message {
+    align-self: flex-start;
+  }
+}
