@@ -1,2 +1,24 @@
 :root {
+  --color-white: #FAF9F6;
+
+  --color-background: #0B1026;
+  --color-primary: #1B2550;
+  --color-text: var(--color-white);
+}
+
+html {
+  font-size: 16px;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  font-size: 1rem;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  height: 100vh;
 }
