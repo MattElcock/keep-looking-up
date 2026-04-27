@@ -1,24 +1,27 @@
 import "dotenv/config";
-import { clerkMiddleware } from "@clerk/express";
-import {
-  mcpAuthClerk,
-  protectedResourceHandlerClerk,
-} from "@clerk/mcp-tools/express";
-import { fetchClerkAuthorizationServerMetadata } from "@clerk/mcp-tools/server";
+import { clerkMiddleware, getAuth } from "@clerk/express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import cors from "cors";
-import express from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import registerToolListAsteroidsCloseToEarth from "./tools/listAsteroidsCloseToEarth.js";
 import registerToolGetAsteroid from "./tools/getAsteroid.js";
 import registerToolListBodiesAboveHorizon from "./tools/listBodiesAboveHorizon.js";
 
 const app = express();
 
-// Required for public MCP clients to read the WWW-Authenticate header
-app.use(cors({ exposedHeaders: ["WWW-Authenticate"] }));
+app.use(cors());
 app.use(clerkMiddleware());
 app.use(express.json());
+
+function requireClerkAuth(req: Request, res: Response, next: NextFunction) {
+  const { isAuthenticated } = getAuth(req);
+  if (!isAuthenticated) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  next();
+}
 
 // ------------------------------------------------------------------
 // MCP server
@@ -43,41 +46,14 @@ function createMcpServer(): McpServer {
 // Routes
 // ------------------------------------------------------------------
 
-// MCP endpoint — protected by Clerk OAuth token verification
 // A fresh server + transport is created per request (SDK does not support reuse)
-app.post("/mcp", mcpAuthClerk, async (req, res) => {
+app.post("/mcp", requireClerkAuth, async (req, res) => {
   const server = createMcpServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });
   await server.connect(transport);
   await transport.handleRequest(req, res, req.body);
-});
-
-// OAuth protected resource metadata (required by current MCP spec)
-app.get(
-  "/.well-known/oauth-protected-resource/mcp",
-  protectedResourceHandlerClerk,
-);
-
-// OAuth authorization server metadata (required by older MCP spec clients)
-app.get("/.well-known/oauth-authorization-server", async (req, res) => {
-  const publishableKey = process.env.CLERK_PUBLISHABLE_KEY;
-  if (!publishableKey) {
-    res.status(500).json({ error: "CLERK_PUBLISHABLE_KEY is not configured" });
-    return;
-  }
-  try {
-    const metadata = await fetchClerkAuthorizationServerMetadata({
-      publishableKey,
-    });
-    res.json(metadata);
-  } catch (err) {
-    console.error("Failed to fetch authorization server metadata:", err);
-    res
-      .status(500)
-      .json({ error: "Failed to fetch authorization server metadata" });
-  }
 });
 
 // ------------------------------------------------------------------

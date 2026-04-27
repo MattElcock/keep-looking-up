@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import "./globals.css";
 import "./reset.css";
+import "./globals.css";
 import styles from "./layout.module.css";
 import { ClerkProvider, RedirectToSignIn, Show } from "@clerk/nextjs";
 import { SidePanel } from "@/containers/SidePanel/SidePanel";

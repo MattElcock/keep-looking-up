@@ -1,5 +1,6 @@
 import { UIMessage } from "ai";
 import styles from "./Message.module.css"
+import Markdown from 'react-markdown'
 
 interface MessageProps extends Pick<UIMessage, "parts" | "role"> {}
 
@@ -15,13 +16,13 @@ const Message = ({ role, parts }: MessageProps) => {
   }
 
   return (
-    <p className={`${styles.message} ${className}`}>
+    <div className={`${styles.message} ${className}`}>
       {parts.map((part) => {
         if (part.type === "text") {
-          return part.text;
+          return <Markdown>{part.text}</Markdown>
         }
       })}
-    </p>
+    </div>
   );
 };
 

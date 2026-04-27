@@ -11,4 +11,17 @@
   &.assistant-message {
     align-self: flex-start;
   }
+
+  &:has(> :nth-child(2)) p,
+  &:has(> :nth-child(2)) ul,
+  &:has(> :nth-child(2)) ol {
+    line-height: 1.5;
+    color: var(--color-text);
+    margin-bottom: 1rem;
+  }
+
+  ul {
+    padding-left: 1rem;
+    list-style-type: disc;
+  }
 }

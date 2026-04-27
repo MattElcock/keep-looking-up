@@ -4,10 +4,6 @@ import styles from "./styles.module.css";
 import { ArrowRight } from "lucide-react";
 import { InputEvent, SubmitEvent, useRef, useState } from "react";
 
-const MAX_ROWS = 6;
-const LINE_HEIGHT = 24;
-const MAX_HEIGHT = LINE_HEIGHT * MAX_ROWS;
-
 interface PromptInputProps {
   onSendMessage: (message: string) => Promise<void>;
 }
@@ -22,9 +18,6 @@ const PromptInput = ({ onSendMessage }: PromptInputProps) => {
 
   const handleInput = (e: InputEvent<HTMLTextAreaElement>) => {
     setPrompt(e.currentTarget.value);
-
-    e.currentTarget.style.height = "auto";
-    e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, MAX_HEIGHT)}px`;
   };
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
@@ -45,7 +38,7 @@ const PromptInput = ({ onSendMessage }: PromptInputProps) => {
           aria-label="Chat with the AI"
           placeholder="Example: What could I see tonight?"
           ref={textareaRef}
-          rows={1}
+          rows={3}
           aria-multiline
           onInput={handleInput}
         />
