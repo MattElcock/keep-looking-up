@@ -1,0 +1,11 @@
+.side-panel {
+  padding: 1rem;
+  background-color: var(--color-primary);
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+}

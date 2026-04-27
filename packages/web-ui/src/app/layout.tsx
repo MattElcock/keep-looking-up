@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./reset.css";
+import styles from "./layout.module.css";
+import { ClerkProvider, RedirectToSignIn, Show } from "@clerk/nextjs";
+import { SidePanel } from "@/containers/SidePanel/SidePanel";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,7 +17,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ClerkProvider>
+          <Show when="signed-out">
+            <RedirectToSignIn />
+          </Show>
+          <Show when="signed-in">
+            <div className={styles["app-layout"]}>
+              <SidePanel />
+              {children}
+            </div>
+          </Show>
+        </ClerkProvider>
+      </body>
     </html>
   );
 }
