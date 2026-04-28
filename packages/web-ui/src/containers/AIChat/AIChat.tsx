@@ -4,10 +4,14 @@ import { PromptInput } from "@/components/PromptInput/PromptInput";
 import styles from "./styles.module.css";
 import React, { useEffect, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { Message } from "@/components/Message/Message";
 
 const AIChat = () => {
-  const { messages, sendMessage } = useChat();
+  const conversationId = useRef(crypto.randomUUID()).current;
+  const { messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({ body: { conversationId } }),
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

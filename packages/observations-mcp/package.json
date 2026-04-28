@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@keep-looking-up/logger": "*",
     "@clerk/express": "^1.0.0",
     "@clerk/mcp-tools": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.0.0",

@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## General
+
+Never commit changes or create new files without explicit approval from the user first.
+
+Prefer arrow functions over `function` declarations.
+
 ## Commands
 
 ```bash
