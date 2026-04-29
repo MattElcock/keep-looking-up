@@ -3,39 +3,27 @@ import { createMCPClient } from "@ai-sdk/mcp";
 import { auth } from "@clerk/nextjs/server";
 import { log } from "@keep-looking-up/logger";
 
+const systemPrompt = `
+  You are an astronomy assistant. You have tools to look up asteroids, celestial bodies, and atmospheric conditions.
+  Before fetching observation data, call getAtmosphericConditions first — if conditions are poor, tell the user and skip other tools.
+`;
+
 interface RequestJson {
   messages: UIMessage[];
   conversationId?: string;
 }
 
-export const POST = async (req: Request) => {
-  const model = process.env.AI_MODEL;
-  if (!model) throw new Error("AI_MODEL environment variable is not set.");
+type MCPHeaders = Record<string, string>;
 
-  const { messages, conversationId }: RequestJson = await req.json();
-  if (!conversationId) {
-    throw new Error("Missing conversationId in request body");
-  }
-
-  const { getToken, userId } = await auth();
-  if (!userId) {
-    throw new Error("Missing userId");
-  }
-  const token = await getToken();
-
-  log({
-    event: "chat.request.received",
-    conversationId,
-    userId: userId,
-    messageCount: messages.length,
-  });
-
-  const mcpHeaders = {
+const buildMCPHeaders = (token: string, conversationId: string): MCPHeaders => {
+  return {
     Authorization: `Bearer ${token}`,
     "x-conversation-id": conversationId,
   };
+};
 
-  const [observationsClient, conditionsClient] = await Promise.all([
+const setupMCPClients = async (mcpHeaders: MCPHeaders) => {
+  const clients = await Promise.all([
     createMCPClient({
       transport: {
         headers: mcpHeaders,
@@ -52,68 +40,118 @@ export const POST = async (req: Request) => {
     }),
   ]);
 
+  const toolArrays = await Promise.all(clients.map((client) => client.tools()));
+  const tools = Object.assign({}, ...toolArrays);
+
   const closeClients = async () => {
-    await Promise.allSettled([
-      observationsClient?.close(),
-      conditionsClient?.close(),
-    ]);
+    await Promise.all(clients.map(async (client) => await client.close()));
   };
 
-  const [observationTools, conditionTools] = await Promise.all([
-    observationsClient.tools(),
-    conditionsClient.tools(),
-  ]);
+  return { clients, tools, closeClients };
+};
 
-  const tools = { ...observationTools, ...conditionTools };
+export const POST = async (req: Request) => {
+  const model = process.env.AI_MODEL;
+  if (!model) throw new Error("AI_MODEL environment variable is not set.");
 
-  const requestStart = Date.now();
-  let stepIndex = 0;
-  let stepStart = requestStart;
+  const { messages, conversationId }: RequestJson = await req.json();
 
-  const result = streamText({
-    model,
-    tools,
-    stopWhen: stepCountIs(5),
-    system:
-      "You are an astronomy assistant. You have tools to look up asteroids, celestial bodies, and atmospheric conditions. Before fetching observation data, call getAtmosphericConditions first — if conditions are poor, tell the user and skip other tools.",
-    messages: await convertToModelMessages(messages),
-    onError: ({ error }) => {
-      log({
-        event: "chat.request.failed",
-        conversationId,
-        userId: userId ?? "unknown",
-        error: error instanceof Error ? error.message : String(error),
-      });
-    },
-    onStepFinish: ({ toolCalls, toolResults }) => {
-      const now = Date.now();
-      log({
-        event: "chat.step.finished",
-        conversationId,
-        userId: userId ?? "unknown",
-        stepIndex: stepIndex++,
-        stepDurationMs: now - stepStart,
-        toolCalls: toolCalls.map((tc) => ({
-          name: tc.toolName,
-          input: tc.input,
-        })),
-        toolResults: toolResults.map((tr) => ({ name: tr.toolName })),
-      });
-      stepStart = now;
-    },
-    onFinish: async ({ usage, steps }) => {
-      log({
-        event: "chat.request.finished",
-        conversationId,
-        userId: userId ?? "unknown",
-        totalDurationMs: Date.now() - requestStart,
-        stepCount: steps.length,
-        inputTokens: usage.inputTokens ?? 0,
-        outputTokens: usage.outputTokens ?? 0,
-      });
-      await closeClients();
-    },
+  if (!conversationId) {
+    log({
+      event: "chat.request.failed",
+      conversationId: "unknown",
+      userId: "unknown",
+      error: "Missing conversationId in request body",
+    });
+    throw new Error("Missing conversationId in request body");
+  }
+
+  const { getToken, userId } = await auth();
+  const token = await getToken();
+
+  if (!token || !userId) {
+    log({
+      event: "chat.request.failed",
+      conversationId,
+      userId: "unknown",
+      error: "Unauthorized",
+    });
+    throw new Error("Unauthorized");
+  }
+
+  log({
+    event: "chat.request.received",
+    conversationId,
+    userId,
+    messageCount: messages.length,
   });
 
-  return result.toUIMessageStreamResponse();
+  const mcpHeaders = buildMCPHeaders(token, conversationId);
+  const { tools, closeClients } = await setupMCPClients(mcpHeaders);
+
+  try {
+    const result = streamText({
+      model,
+      tools,
+      stopWhen: stepCountIs(5),
+      system: systemPrompt,
+      messages: await convertToModelMessages(messages),
+      onError: ({ error }) => {
+        log({
+          event: "chat.request.failed",
+          conversationId,
+          userId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      },
+      onStepFinish: ({
+        toolCalls,
+        toolResults,
+        stepNumber,
+        finishReason,
+        text,
+      }) => {
+        log({
+          event: "chat.step.finished",
+          conversationId,
+          userId,
+          stepNumber,
+          finishReason,
+          response: text,
+          toolCalls: toolCalls.map((tc) => ({
+            name: tc.toolName,
+            input: tc.input,
+          })),
+          toolResults: toolResults.map((tr) => ({
+            name: tr.toolName,
+            output: tr.output,
+          })),
+        });
+      },
+      onFinish: async ({ usage, steps, finishReason, text }) => {
+        log({
+          event: "chat.request.finished",
+          conversationId,
+          userId,
+          finishReason,
+          response: text,
+          stepCount: steps.length,
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
+        });
+        await closeClients();
+      },
+    });
+
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    log({
+      event: "chat.request.failed",
+      conversationId,
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    await closeClients();
+    throw error;
+  }
 };
