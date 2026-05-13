@@ -2,11 +2,7 @@ import { convertToModelMessages, stepCountIs, streamText, UIMessage } from "ai";
 import { createMCPClient } from "@ai-sdk/mcp";
 import { auth } from "@clerk/nextjs/server";
 import { log } from "@keep-looking-up/logger";
-
-const systemPrompt = `
-  You are an astronomy assistant. You have tools to look up asteroids, celestial bodies, and atmospheric conditions.
-  Before fetching observation data, call getAtmosphericConditions first — if conditions are poor, tell the user and skip other tools.
-`;
+import { systemMessage } from "./systemMessages";
 
 interface RequestJson {
   messages: UIMessage[];
@@ -94,7 +90,7 @@ export const POST = async (req: Request) => {
       model,
       tools,
       stopWhen: stepCountIs(5),
-      system: systemPrompt,
+      system: `Current date and time: ${new Date().toISOString()} (UTC)\n\n${systemMessage}`,
       messages: await convertToModelMessages(messages),
       onError: ({ error }) => {
         log({
